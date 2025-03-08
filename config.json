@@ -1,0 +1,9 @@
+{
+    "input_dir": "C:\\Users\\flash\\Documents\\myData\\stock\\tdx_block\\block",
+    "output_dir": "C:\\Users\\flash\\Documents\\myData\\stock\\tdx_block\\processed",
+    "mapping": {
+        "1": "SH",
+        "0": "BJ",
+        "2": "BJ"
+    }
+}

@@ -2,9 +2,9 @@ import os
 import copy
 import time
 import pickle
-import talib
 import pandas as pd
 import numpy as np
+from rqalpha.mod.rqalpha_mod_sys_accounts.api.api_stock import is_suspended
 
 import user_config as ucfg
 from rqalpha.apis import *

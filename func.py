@@ -598,8 +598,8 @@ def make_fq(code, df_code, df_gbbq, df_cw='', start_date='', end_date='', fqtype
     # df_ltg拼接回原DF
     data = pd.concat([data, df_ltg], axis=1)
 
-    data = data.fillna(method='ffill')  # 向下填充无效值
-    data = data.fillna(method='bfill')  # 向上填充无效值  为了弥补开始几行的空值
+    #data = data.fillna(method='ffill')  # 向下填充无效值
+    data = data.ffill()  # 向上填充无效值  为了弥补开始几行的空值
     data = data.round({'open': 2, 'high': 2, 'low': 2, 'close': 2, })  # 指定列四舍五入
     if '流通股' in data.columns.to_list():
         data['流通市值'] = data['流通股'] * data['close']
@@ -744,9 +744,11 @@ def update_stockquote(code, df_history, df_today):
             df_today['date'] = now_date
         df_today.set_index('date', drop=False, inplace=True)
         df_today = df_today.rename(columns={'price': 'close'})
-        df_today = df_today[{'code', 'date', 'open', 'high', 'low', 'close', 'vol', 'amount'}]
+        #df_today = df_today[{'code', 'date', 'open', 'high', 'low', 'close', 'vol', 'amount'}] #bug
+        df_today = df_today[['code', 'date', 'open', 'high', 'low', 'close', 'vol', 'amount']]
         result = pd.concat([df_history, df_today], axis=0, ignore_index=False)
-        result = result.fillna(method='ffill')  # 向下填充无效值
+        #result = result.fillna(method='ffill')  # 向下填充无效值 bug
+        result = result.ffill()  # 向下填充无效值
         if '流通市值' and '换手率' in result.columns.tolist():
             result['流通市值'] = result['流通股'] * result['close']
             result = result.round({'流通市值': 2, })  # 指定列四舍五入
@@ -759,12 +761,71 @@ def update_stockquote(code, df_history, df_today):
     return result
 
 
+def get_security_bars(stocklist=None):
+    """
+    使用pytdx获取当前实时行情。返回行情的DF列表格式。stocklist为空则获取ucfg.tdx['csv_lday']目录全部股票行情
+    :param stocklist:  可选，list类型。str类型传入股票列表['000001', '000002','600030']
+    :return:当前从pytdx服务器获取的最新股票行情
+    """
+
+    from pytdx.hq import TdxHq_API
+
+    stocklist_pytdx = []
+
+    if stocklist is None:  # 如果列表为空，则获取csv_lday目录全部股票
+        stocklist = []
+        for i in os.listdir(ucfg.tdx['csv_lday']):
+            stocklist.append(i[:-4])
+    elif isinstance(stocklist, str):
+        tmp = []
+        tmp.append(stocklist)
+        stocklist = tmp
+        del tmp
+    elif isinstance(stocklist, tuple):
+        stocklist_pytdx.append(stocklist)
+
+    if isinstance(stocklist, list):
+        for stock in stocklist:  # 构造get_minute_time_data所需的元组参数
+            if stock[:1] == '6':
+                stocklist_pytdx.append(tuple([1, stock]))
+            elif stock[:1] == '0' or stock[:1] == '3':
+                stocklist_pytdx.append(tuple([0, stock]))
+        del stocklist
+
+    df = pd.DataFrame()
+    api = TdxHq_API(raise_exception=False)
+    starttime_tick = time.time()
+    print(f'请求 {len(stocklist_pytdx)} 只股票实时行情')
+    if api.connect(ucfg.tdx['pytdx_ip'], ucfg.tdx['pytdx_port']):
+        # 第一轮获取股票行情，会有100只股票左右遗漏。pytdx代码问题
+        for stocks in stocklist_pytdx:
+            data = api.to_df(api.get_security_bars(0, stocks[0], stocks[1], 0, 1))
+            df = pd.concat([df, data], axis=0, ignore_index=True)
+
+        api.disconnect()
+        df.dropna(how='all', inplace=True)
+
+    print(f'已获取 {len(df)} 只股票实时行情 用时 {(time.time() - starttime_tick):>.2f} 秒')
+    if len(stocklist_pytdx) > 0:
+        print(f'剩余 {len(stocklist_pytdx)} 只股票今日未交易:')
+        print(stocklist_pytdx)
+
+    return df
+
+
+
+
 if __name__ == '__main__':
-    stock_code = '600036'
+    """stock_code = '600036'
     day2csv(ucfg.tdx['tdx_path'] + '/vipdoc/sh/lday', 'sh' + stock_code + '.day', ucfg.tdx['csv_lday'])
     df_gbbq = pd.read_csv(ucfg.tdx['csv_gbbq'] + '/gbbq.csv', encoding='gbk', dtype={'code': str})
     df_bfq = pd.read_csv(ucfg.tdx['csv_lday'] + os.sep + stock_code + '.csv',
                          index_col=None, encoding='gbk', dtype={'code': str})
     df_qfq = make_fq(stock_code, df_bfq, df_gbbq)
     if len(df_qfq) > 0:
-        df_qfq.to_csv(ucfg.tdx['csv_lday'] + os.sep + stock_code + '.csv', index=False, encoding='gbk')
+        df_qfq.to_csv(ucfg.tdx['csv_lday'] + os.sep + stock_code + '.csv', index=False, encoding='gbk')"""
+    stock_code = ['600973','002354']
+    df_bfq = get_security_bars(stock_code)
+    df_quots = get_tdx_lastestquote(stock_code)
+    print(df_bfq.to_csv())
+    print(df_quots.to_csv())

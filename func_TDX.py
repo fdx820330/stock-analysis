@@ -64,7 +64,7 @@ def HHV(series, day):
             if tmp < series.iat[i]:
                 tmp = series.iat[i]
                 value.iat[i] = tmp
-        value = value.fillna(method='ffill')  # 向下填充无效值
+        value = value.ffill()  # 向下填充无效值
     else:
         value = series.rolling(day).max()
         value.iloc[0:day-1] = HHV(series.iloc[0:day-1], 0)
@@ -84,7 +84,7 @@ def LLV(series, day):
             if tmp > series.iat[i]:
                 tmp = series.iat[i]
                 value.iat[i] = tmp
-        value = value.fillna(method='ffill')  # 向下填充无效值
+        value = value.ffill()  # 向下填充无效值
     else:
         value = series.rolling(day).min()
         value.iloc[0:day - 1] = LLV(series.iloc[0:day - 1], 0)
@@ -128,7 +128,7 @@ def BARSLAST(series):
     #  BARSLAST(CLOSE/REF(CLOSE,1)>=1.1)表示上一个涨停板到当前的周期数
     result = pd.Series(index=series.index, dtype=int)
     i = 0
-    for k, v in series.iteritems():
+    for k, v in series.items():
         if v:
             i = 0
             result[k] = i
@@ -146,7 +146,7 @@ def BARSLASTCOUNT(cond):
     #  BARSLASTCOUNT(CLOSE>OPEN)表示统计连续收阳的周期数
     result = pd.Series(index=cond.index, dtype=int)
     i = 0
-    for k, v in cond.iteritems():
+    for k, v in cond.items():
         if v:
             i = i + 1
             result[k] = i
@@ -159,5 +159,5 @@ def BARSLASTCOUNT(cond):
 def VALUEWHEN(cond, value_series):
     result = pd.Series(index=cond.index, dtype=float)
     result.loc[cond.loc[cond==True].keys()] = value_series.loc[cond.loc[cond==True].keys()]
-    result = result.fillna(method='ffill')  # 向下填充无效值
+    result = result.ffill()  # 向下填充无效值
     return result

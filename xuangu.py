@@ -71,6 +71,7 @@ def load_dict_stock(stocklist):
 
 
 def run_celue1(stocklist, df_today, tqdm_position=None):
+    print("start run_celue1..............")
     if 'single' in sys.argv[1:]:
         tq = tqdm(stocklist[:])
     else:
@@ -83,7 +84,7 @@ def run_celue1(stocklist, df_today, tqdm_position=None):
             df_stock = func.update_stockquote(stockcode, df_stock, df_today)
         df_stock['date'] = pd.to_datetime(df_stock['date'], format='%Y-%m-%d')  # 转为时间格式
         df_stock.set_index('date', drop=False, inplace=True)  # 时间为索引。方便与另外复权的DF表对齐合并
-        celue1 = CeLue.策略1(df_stock, start_date=start_date, end_date=end_date, mode='fast')
+        celue1 = CeLue.macd_strategy(df_stock)
         if not celue1:
             stocklist.remove(stockcode)
     return stocklist
@@ -109,7 +110,7 @@ def run_celue2(stocklist, HS300_信号, df_gbbq, df_today, tqdm_position=None):
             if now_date in df_gbbq.loc[df_gbbq['code'] == stockcode]['权息日'].to_list():
                 cw_dict = func.readall_local_cwfile()
                 df_stock = func.make_fq(stockcode, df_stock, df_gbbq, cw_dict)
-        celue2 = CeLue.策略2(df_stock, HS300_信号, start_date=start_date, end_date=end_date).iat[-1]
+        celue2 = CeLue.rule2(df_stock, HS300_信号, start_date=start_date, end_date=end_date).iat[-1]
         if not celue2:
             stocklist.remove(stockcode)
     return stocklist
@@ -141,12 +142,12 @@ if __name__ == '__main__':
         df_today = func.get_tdx_lastestquote((1, '000300'))
         df_hs300 = func.update_stockquote('000300', df_hs300, df_today)
         del df_today
-    HS300_信号 = CeLue.策略HS300(df_hs300)
-    if HS300_信号.iat[-1]:
+    HS300_sinal = CeLue.策略HS300(df_hs300)
+    if HS300_sinal.iat[-1]:
         print('[red]今日HS300满足买入条件，执行买入操作[/red]')
     else:
         print('[green]今日HS300不满足买入条件，仍然选股，但不执行买入操作[/green]')
-        HS300_信号.loc[:] = True  # 强制全部设置为True出选股结果
+        HS300_sinal.loc[:] = True  # 强制全部设置为True出选股结果
 
 
     # 周一到周五，9点到16点之间，获取在线行情。其他时间不是交易日，默认为离线数据已更新到最新
@@ -215,7 +216,7 @@ if __name__ == '__main__':
 
     starttime_tick = time.time()
     if 'single' in sys.argv[1:]:
-        stocklist = run_celue2(stocklist, HS300_信号, df_gbbq, df_today)
+        stocklist = run_celue2(stocklist, HS300_sinal, df_gbbq, df_today)
     else:
         # 由于df_dict字典占用超多内存资源，导致多进程效率还不如单进程
         t_num = os.cpu_count() - 2  # 进程数 读取CPU逻辑处理器个数
@@ -228,10 +229,10 @@ if __name__ == '__main__':
             mod = len(stocklist) % t_num
             if i + 1 != t_num:
                 # print(i, i * div, (i + 1) * div)
-                pool_result.append(p.apply_async(run_celue2, args=(stocklist[i * div:(i + 1) * div], HS300_信号, df_gbbq, df_today, i,)))
+                pool_result.append(p.apply_async(run_celue2, args=(stocklist[i * div:(i + 1) * div], HS300_sinal, df_gbbq, df_today, i,)))
             else:
                 # print(i, i * div, (i + 1) * div + mod)
-                pool_result.append(p.apply_async(run_celue2, args=(stocklist[i * div:(i + 1) * div + mod], HS300_信号, df_gbbq, df_today, i,)))
+                pool_result.append(p.apply_async(run_celue2, args=(stocklist[i * div:(i + 1) * div + mod], HS300_sinal, df_gbbq, df_today, i,)))
 
         # print('Waiting for all subprocesses done...')
         p.close()

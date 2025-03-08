@@ -9,15 +9,16 @@
 # 配置部分开始
 debug = False  # 是否开启调试日志输出  开=True  关=False
 
+#最佳通达信服务器IP和端口：{'ip': '180.153.18.170', 'port': 7709}
 # 目录最好事先手动建立好，不然程序会出错
 tdx = {
-    'tdx_path': 'd:/stock/通达信',  # 指定通达信目录
-    'csv_lday': 'd:/TDXdata/lday_qfq',  # 指定csv格式日线数据保存目录
-    'pickle': 'd:/TDXdata/pickle',  # 指定pickle格式日线数据保存目录
-    'csv_index': 'd:/TDXdata/index',  # 指定指数保存目录
-    'csv_cw': 'd:/TDXdata/cw',  # 指定专业财务保存目录
-    'csv_gbbq': 'd:/TDXdata',  # 指定股本变迁保存目录
-    'pytdx_ip': '218.6.170.55',  # 指定pytdx的通达信服务器IP
+    'tdx_path': 'C:/new_tdx',  # 指定通达信目录
+    'csv_lday': 'C:/Users/flash/Documents/myData/stock/tdx_test/lday_qfq',  # 指定csv格式日线数据保存目录
+    'pickle': 'C:/Users/flash/Documents/myData/stock/tdx_test/TDXdata/pickle',  # 指定pickle格式日线数据保存目录
+    'csv_index': 'C:/Users/flash/Documents/myData/stock/tdx_test/TDXdata/index',  # 指定指数保存目录
+    'csv_cw': 'C:/Users/flash/Documents/myData/stock/tdx_test/TDXdata/cw',  # 指定专业财务保存目录
+    'csv_gbbq': 'C:/Users/flash/Documents/myData/stock/tdx_test/TDXdata',  # 指定股本变迁保存目录
+    'pytdx_ip': '180.153.18.170',  # 指定pytdx的通达信服务器IP
     'pytdx_port': 7709,  # 指定pytdx的通达信服务器端口。int类型
 }
 
